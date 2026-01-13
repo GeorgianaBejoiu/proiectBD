@@ -1,3 +1,5 @@
+
+
 --crearea bazei de date
 CREATE DATABASE ProiectAutogara;
 
@@ -283,7 +285,7 @@ SET Capacitate = Capacitate + 5
 WHERE ID_autobuz IN (
     SELECT ID_autobuz
     FROM Conduce
-    WHERE Data_sfarsit IS NULL
+    WHERE Data_sfarsit IS NULL --adica soferul conduce in continuare autobuzul respectiv
 );
 
 --UPDATE pentru cursele din ziua respectiva mareste pretul cu 10%
@@ -501,7 +503,7 @@ SELECT
 FROM Autogara A
 JOIN Cursa C ON A.ID_autogara = C.ID_autogara
 GROUP BY A.ID_autogara, A.Nume, A.Oras
-HAVING COUNT(C.ID_cursa) >= 1;
+HAVING COUNT(C.ID_cursa) >= 1;--filtram sa includem doar autogarile care au cel putin o cursa.
 
 
 
@@ -556,7 +558,7 @@ WHERE ID_pasager NOT IN(
 SELECT S.Nume, S.Prenume
 FROM Sofer S
 WHERE EXISTS(
-	SELECT 1
+	SELECT 1 --returneaza cel putin un rand
 	FROM Conduce C
 	JOIN Foloseste F ON C.ID_autobuz = F.ID_autobuz
 	JOIN Cursa Cu ON F.ID_cursa = Cu.ID_cursa
@@ -606,6 +608,7 @@ WHERE EXISTS(
 );
 
 --5D
+--Afiseaza informatii despre pasageri care au bilete la curse dupa 1 decembrie 2025
 SELECT
     -- Functii pe siruri de caractere
     CONCAT(P.Nume, ' ', P.Prenume) AS Nume_Complet,  -- concatenate
@@ -616,7 +619,7 @@ SELECT
     (CURRENT_DATE - C.Data_plecare) AS Zile_de_la_plecare, -- diferenta in zile (date - date)
 
     -- Expresie CASE
-    CASE 
+    CASE --
         WHEN S.Experienta >= 10 THEN 'Veteran'
         WHEN S.Experienta BETWEEN 5 AND 9 THEN 'Medie'
         ELSE 'Incepator'
@@ -630,6 +633,7 @@ JOIN Foloseste F ON C.ID_cursa = F.ID_cursa
 JOIN Conduce Co ON F.ID_autobuz = Co.ID_autobuz
 JOIN Sofer S ON Co.ID_sofer = S.ID_sofer
 WHERE C.Data_plecare >= '2025-12-01';
+--Legaturi:pasagerii de biletele lor, biletele de curse, cursele de autogari, apoi de autobuze si, in final, de soferii care le conduc
 
 --PUNCTUL 5E
 -- Vedere simpla pe tabelul Sofer (vedere fara JOIN, permite modificari)
@@ -663,6 +667,7 @@ WHERE ID_cursa = 1;*/
 -- Va genera eroare deoarece vederea contine GROUP BY si agregare
 
 --PUNCTUL 6
+--Crearea unui index care sa optimizeze o interogare cu 2 criterii de cautare
 --initial
 SELECT * 
 FROM Cursa 
@@ -684,6 +689,8 @@ INSERT INTO Autogara VALUES (11, 'Autogara Sud', 'Str. Popoveni 1', 'Bucuresti')
 
 SELECT * FROM Cursa;
 
+SELECT * FROM Autobuz;
+
 INSERT INTO RutaFixa VALUES (11, 'Craiova', 'Bucuresti', 230);
 
 INSERT INTO Autobuz VALUES (12, 'DJ000MM', 54);
@@ -691,3 +698,35 @@ INSERT INTO Autobuz VALUES (12, 'DJ000MM', 54);
 SELECT * FROM Autogara WHERE Oras = 'Bucuresti';
 
 SELECT * FROM Cursa WHERE Data_plecare = '2025-12-01';
+
+SELECT column_name FROM information_schema.columns WHERE table_name = 'cursa';
+
+SELECT * FROM Autogara;
+SELECT * FROM Sofer;
+SELECT * FROM Autobuz;
+
+-- Eliminăm constrângerea veche
+ALTER TABLE bilet
+DROP CONSTRAINT bilet_id_pasager_fkey;
+
+-- O recreăm cu regula de ștergere în cascadă
+ALTER TABLE bilet
+ADD CONSTRAINT bilet_id_pasager_fkey
+FOREIGN KEY (id_pasager) 
+REFERENCES pasager(id_pasager)
+ON DELETE CASCADE;
+
+-- Eliminăm constrângerea pentru cursă
+ALTER TABLE bilet
+DROP CONSTRAINT bilet_id_cursa_fkey;
+
+-- O recreăm cu regula de ștergere în cascadă
+ALTER TABLE bilet
+ADD CONSTRAINT bilet_id_cursa_fkey
+FOREIGN KEY (id_cursa) 
+REFERENCES cursa(id_cursa)
+ON DELETE CASCADE;
+
+DELETE FROM pasager WHERE id_pasager = 1;
+
+SELECT * FROM bilet WHERE id_pasager = 1;
